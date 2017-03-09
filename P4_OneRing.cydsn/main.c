@@ -32,6 +32,9 @@
  
 #include <project.h>
 
+// Functions for BLE handling
+void StackEventHandler(uint32 event, void* eventParam);
+
 // Function prototypes for pattern functions.
 void SingleLED(uint32 delay);
 void RgbChase(uint32 delay);
@@ -57,17 +60,58 @@ int main()
 	// Enable global interrupts, required for StripLights
     CyGlobalIntEnable;    
 
+    /* Start the BLE component and register StackEventHandler function */
+    CyBle_Start(StackEventHandler);    
+    
 	// Loop through the different patterns each time SW1 is pressed.
 	for(;;)
 	{
+        CyBle_ProcessEvents();
+        /*
 		SingleLedMultiColor(100);
 		OneColor(20);
 		SingleLED(50);
 		OppositeRings(130);
 		RgbChase(100);
 		Rainbow(30);
+        */
 	}
 }
+
+
+/*******************************************************************************
+* Function Name: StackEventHandler
+********************************************************************************
+*
+* Summary:
+*  This is an event callback function to receive events from the BLE Component.
+*
+* Parameters:  
+*  uint8 event:       Event from the CYBLE component
+*  void* eventParams: A structure instance for corresponding event type. The 
+*                     list of event structure is described in the component 
+*                     datasheet.
+*
+* Return: 
+*  None
+*
+*******************************************************************************/
+void StackEventHandler(uint32 event, void *eventParam)
+{
+    switch(event)
+    {
+        case CYBLE_EVT_STACK_ON:
+        case CYBLE_EVT_GAP_DEVICE_DISCONNECTED:
+            CyBle_GappStartAdvertisement(CYBLE_ADVERTISING_FAST);
+            break;
+           
+            
+            
+        default:
+    	    break;
+    }
+}
+
 
 /************************************************
  *                    SingleLED()
@@ -109,6 +153,9 @@ void SingleLED(uint32 delay)
 	while(SW1_Read() == 0);   
 	CyDelay(50);
 }
+
+
+
 
 /************************************************
  *                    SingleLED()
