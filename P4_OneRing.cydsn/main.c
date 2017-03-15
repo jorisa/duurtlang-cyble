@@ -46,7 +46,13 @@ void SingleLedMultiColor(uint32 delay);
 void SingleLEDRand();
 void SingleLEDRand2(uint32 ledPosition);
 
+void number(uint8_t number, uint8_t offset);
+void show_byte(uint8_t val, uint8_t offset);
+
 extern const uint32 StripLights_CLUT[ ];
+
+// Bitread, copied from photon, read a bit value from a byte
+#define bitRead(value, bit) (((value) >> (bit)) & 0x01)
 
 int main()
 {
@@ -66,10 +72,22 @@ int main()
     CyBle_Start(StackEventHandler);    
     
 	// Loop through the different patterns each time SW1 is pressed.
+    
+    
 	for(;;)
 	{
         CyBle_ProcessEvents();
-        SingleLEDRand();
+    
+        /*
+        uint8_t i;
+        for(i=0;i<=12;i++) {
+        StripLights_MemClear(StripLights_BLACK);
+        number(i,1);
+        StripLights_Trigger(1);
+        CyDelay(1000);
+        */
+        
+        //SingleLEDRand();
         //SingleLED2(50);
         /*
 		SingleLedMultiColor(100);
@@ -146,6 +164,61 @@ void StackEventHandler(uint32 event, void *eventParam)
     }
 }
 
+// Display a number
+
+void number(uint8_t number, uint8_t offset) {
+    if (number >= 10) {
+        StripLights_Pixel(6+offset, 0, 0x00000010);
+        StripLights_Pixel(7+offset, 0, 0x00000010);
+        number = number - 10;
+    }
+    switch (number) {
+        case 0:
+            show_byte(63, offset);
+        break;
+        case 1:
+            show_byte(6, offset);
+        break;
+        case 2:
+            show_byte(91, offset);
+        break;
+        case 3:
+            show_byte(79, offset);
+        break;
+        case 4:
+            show_byte(102, offset);
+        break;
+        case 5:
+            show_byte(109, offset);
+        break;
+        case 6:
+            show_byte(125, offset);
+        break;
+        case 7:
+            show_byte(7, offset);
+        break;
+        case 8:
+            show_byte(127, offset);
+        break;
+        case 9:
+            show_byte(111, offset);
+        break;
+    }
+}
+
+// Show a byte, used by the number
+
+void show_byte(uint8_t val, uint8_t offset) {
+    uint8_t i;
+    for(i=0;i<8;i++) {
+        if (bitRead(val,i+1)==1) {
+            StripLights_Pixel(i+offset, 0, 0x00001000);
+        }
+    }
+}
+
+
+
 
 /************************************************
  *                    SingleLED()
@@ -195,7 +268,8 @@ void SingleLEDRand2(uint32 ledPosition)
 	StripLights_MemClear(StripLights_BLACK);   
 	
 	// Set the color of a single LED
-    StripLights_Pixel(ledPosition, 0, StripLights_RED ); 
+    number(ledPosition,1);
+    //StripLights_Pixel(ledPosition, 0, StripLights_RED ); 
 
 	// Trigger update of all LEDs at once
     StripLights_Trigger(1);   
