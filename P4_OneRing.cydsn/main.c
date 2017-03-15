@@ -138,13 +138,9 @@ void StackEventHandler(uint32 event, void *eventParam)
             if(wrReqParam->handleValPair.attrHandle == CYBLE_CATAN_TILE_CHAR_HANDLE) //If client writes to the number_write characteristic
                 {
                     uint8 number_write = wrReqParam->handleValPair.value.val[0]; //Pull out the number_write value
-                    
-                    
-                    CYBLE_GATT_HANDLE_VALUE_PAIR_T tileVal;  
-                    tileVal.attrHandle= CYBLE_CATAN_TILE_CHAR_HANDLE;  
-                    tileVal.value.val = &number_write; 
-                    tileVal.value.len = 1;
-                    CyBle_GattsWriteAttributeValue(&tileVal, 0, &cyBle_connHandle, CYBLE_GATT_DB_PEER_INITIATED); 
+                   
+
+                    CyBle_GattsWriteAttributeValue(&wrReqParam->handleValPair, 0, &cyBle_connHandle, CYBLE_GATT_DB_PEER_INITIATED); 
                     
                     SingleLEDRand2(number_write);
                 }   
