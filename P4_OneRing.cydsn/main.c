@@ -43,6 +43,8 @@ void Rainbow(uint32 delay);
 void OppositeRings(uint32 delay);
 void OneColor(uint32 delay);
 void SingleLedMultiColor(uint32 delay);
+void SingleLEDRand();
+void SingleLEDRand2(uint32 ledPosition);
 
 extern const uint32 StripLights_CLUT[ ];
 
@@ -67,6 +69,8 @@ int main()
 	for(;;)
 	{
         CyBle_ProcessEvents();
+        SingleLEDRand();
+        //SingleLED2(50);
         /*
 		SingleLedMultiColor(100);
 		OneColor(20);
@@ -75,6 +79,7 @@ int main()
 		RgbChase(100);
 		Rainbow(30);
         */
+        
 	}
 }
 
@@ -98,13 +103,42 @@ int main()
 *******************************************************************************/
 void StackEventHandler(uint32 event, void *eventParam)
 {
+    
+    CYBLE_GATTS_WRITE_REQ_PARAM_T *wrReqParam;
+    
     switch(event)
     {
         case CYBLE_EVT_STACK_ON:
         case CYBLE_EVT_GAP_DEVICE_DISCONNECTED:
             CyBle_GappStartAdvertisement(CYBLE_ADVERTISING_FAST);
             break;
-           
+        case CYBLE_EVT_GATTS_WRITE_REQ:
+        case CYBLE_EVT_GATTS_WRITE_CMD_REQ:
+            
+            wrReqParam = (CYBLE_GATTS_WRITE_REQ_PARAM_T *) eventParam; //read in event command
+            
+            if(wrReqParam->handleValPair.attrHandle == CYBLE_CATAN_TILE_CHAR_HANDLE) //If client writes to the number_write characteristic
+                {
+                    uint8 number_write = wrReqParam->handleValPair.value.val[0]; //Pull out the number_write value
+                    
+                    
+                    CYBLE_GATT_HANDLE_VALUE_PAIR_T tileVal;  
+                    tileVal.attrHandle= CYBLE_CATAN_TILE_CHAR_HANDLE;  
+                    tileVal.value.val = &number_write; 
+                    tileVal.value.len = 1;
+                    CyBle_GattsWriteAttributeValue(&tileVal, 0, &cyBle_connHandle, CYBLE_GATT_DB_PEER_INITIATED); 
+                    
+                    SingleLEDRand2(number_write);
+                }   
+ 
+            if (event == CYBLE_EVT_GATTS_WRITE_REQ) //If write was a write with response request.
+                {
+                    CyBle_GattsWriteRsp(cyBle_connHandle); //Send response back to Client
+                }
+            
+
+            
+            break;
             
             
         default:
@@ -119,6 +153,59 @@ void StackEventHandler(uint32 event, void *eventParam)
  *  Rotate a single LED around the ring.
  *
  ************************************************/
+
+void SingleLEDRand()
+{
+    uint32 ledPosition = 3;
+
+		// Wait for last update to finish
+    while( StripLights_Ready() == 0);                 
+	
+	// Clear all LEDs to background color
+	//StripLights_MemClear(StripLights_BLACK);
+    StripLights_MemClear(0x000A0000);
+	
+	// Set the color of a single LED
+    //StripLights_Pixel(ledPosition, 0, StripLights_RED ); 
+    //StripLights_Pixel(ledPosition, 0, 0x0000000F );
+
+	// Trigger update of all LEDs at once
+    StripLights_Trigger(1);
+
+    CyDelay(200);
+    
+    	// Set the color of a single LED
+    //StripLights_Pixel(ledPosition, 0, StripLights_BLUE );
+    StripLights_Pixel(ledPosition, 0, 0x000000AF ); 
+
+	// Trigger update of all LEDs at once
+    StripLights_Trigger(1);
+        
+    CyDelay(200);
+}
+
+void SingleLEDRand2(uint32 ledPosition)
+{
+    //uint32 ledPosition = 4;
+
+		// Wait for last update to finish
+    while( StripLights_Ready() == 0);                 
+	
+	// Clear all LEDs to background color
+	StripLights_MemClear(StripLights_BLACK);   
+	
+	// Set the color of a single LED
+    StripLights_Pixel(ledPosition, 0, StripLights_RED ); 
+
+	// Trigger update of all LEDs at once
+    StripLights_Trigger(1);   
+    
+    CyDelay(500);
+    
+}
+    
+
+
 void SingleLED(uint32 delay)
 {
     uint32 ledPosition = 0;  // On LED position
