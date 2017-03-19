@@ -44,15 +44,39 @@ void OppositeRings(uint32 delay);
 void OneColor(uint32 delay);
 void SingleLedMultiColor(uint32 delay);
 void SingleLEDRand();
-void SingleLEDRand2(uint32 ledPosition);
+void NumberLED(uint8 ledPosition, uint8 brightness, uint32 color);
+void EdgeLED(uint8 brightness, uint32 color);
 
-void number(uint8_t number, uint8_t offset);
-void show_byte(uint8_t val, uint8_t offset);
+void number(uint8_t number, uint8_t offset, uint8 brightness, uint32_t color);
+void show_byte(uint8_t val, uint8_t offset, uint8 brightness, uint32_t color);
+
+void edge(uint8_t offset, uint8 brightness, uint32 color);
+
+uint32 corr_color(uint8 brightness, uint32 color);
 
 extern const uint32 StripLights_CLUT[ ];
 
 // Bitread, copied from photon, read a bit value from a byte
 #define bitRead(value, bit) (((value) >> (bit)) & 0x01)
+
+uint8 gamma_corr[] = {
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
+    1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,
+    2,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  5,  5,  5,
+    5,  6,  6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  9,  9,  9, 10,
+   10, 10, 11, 11, 11, 12, 12, 13, 13, 13, 14, 14, 15, 15, 16, 16,
+   17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25,
+   25, 26, 27, 27, 28, 29, 29, 30, 31, 32, 32, 33, 34, 35, 35, 36,
+   37, 38, 39, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 50,
+   51, 52, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 66, 67, 68,
+   69, 70, 72, 73, 74, 75, 77, 78, 79, 81, 82, 83, 85, 86, 87, 89,
+   90, 92, 93, 95, 96, 98, 99,101,102,104,105,107,109,110,112,114,
+  115,117,119,120,122,124,126,127,129,131,133,135,137,138,140,142,
+  144,146,148,150,152,154,156,158,160,162,164,167,169,171,173,175,
+  177,180,182,184,186,189,191,193,196,198,200,203,205,208,210,213,
+  215,218,220,223,225,228,231,233,236,239,241,244,247,249,252,255 };
+
 
 int main()
 {
@@ -89,6 +113,7 @@ int main()
         
         //SingleLEDRand();
         //SingleLED2(50);
+        
         /*
 		SingleLedMultiColor(100);
 		OneColor(20);
@@ -138,11 +163,26 @@ void StackEventHandler(uint32 event, void *eventParam)
             if(wrReqParam->handleValPair.attrHandle == CYBLE_CATAN_TILE_CHAR_HANDLE) //If client writes to the number_write characteristic
                 {
                     uint8 number_write = wrReqParam->handleValPair.value.val[0]; //Pull out the number_write value
+                    
+                    uint8 bright_num = wrReqParam->handleValPair.value.val[1];
                    
+                    uint32 color_num = 0;
+                    color_num = wrReqParam->handleValPair.value.val[2];
+                    color_num = (color_num << 8) + wrReqParam->handleValPair.value.val[3];
+                    color_num = (color_num << 8) + wrReqParam->handleValPair.value.val[4];
+
+                    uint8 bright_edge = wrReqParam->handleValPair.value.val[5];
+                   
+                    uint32 color_edge = 0;
+                    color_edge = wrReqParam->handleValPair.value.val[6];
+                    color_edge = (color_edge << 8) + wrReqParam->handleValPair.value.val[7];
+                    color_edge = (color_edge << 8) + wrReqParam->handleValPair.value.val[8];
+                    
 
                     CyBle_GattsWriteAttributeValue(&wrReqParam->handleValPair, 0, &cyBle_connHandle, CYBLE_GATT_DB_PEER_INITIATED); 
                     
-                    SingleLEDRand2(number_write);
+                    NumberLED(number_write, bright_num, color_num);
+                    EdgeLED(bright_edge, color_edge);
                 }   
  
             if (event == CYBLE_EVT_GATTS_WRITE_REQ) //If write was a write with response request.
@@ -162,55 +202,82 @@ void StackEventHandler(uint32 event, void *eventParam)
 
 // Display a number
 
-void number(uint8_t number, uint8_t offset) {
+void number(uint8_t number, uint8_t offset, uint8 brightness, uint32_t color) {
     if (number >= 10) {
-        StripLights_Pixel(6+offset, 0, 0x00000010);
-        StripLights_Pixel(7+offset, 0, 0x00000010);
+        StripLights_Pixel(6+offset, 0, color);
+        StripLights_Pixel(7+offset, 0, color);
         number = number - 10;
     }
     switch (number) {
         case 0:
-            show_byte(63, offset);
+            show_byte(63, offset, brightness, color);
         break;
         case 1:
-            show_byte(6, offset);
+            show_byte(6, offset, brightness, color);
         break;
         case 2:
-            show_byte(91, offset);
+            show_byte(91, offset, brightness, color);
         break;
         case 3:
-            show_byte(79, offset);
+            show_byte(79, offset, brightness, color);
         break;
         case 4:
-            show_byte(102, offset);
+            show_byte(102, offset, brightness, color);
         break;
         case 5:
-            show_byte(109, offset);
+            show_byte(109, offset, brightness, color);
         break;
         case 6:
-            show_byte(125, offset);
+            show_byte(125, offset, brightness, color);
         break;
         case 7:
-            show_byte(7, offset);
+            show_byte(7, offset, brightness, color);
         break;
         case 8:
-            show_byte(127, offset);
+            show_byte(127, offset, brightness, color);
         break;
         case 9:
-            show_byte(111, offset);
+            show_byte(111, offset, brightness, color);
         break;
     }
 }
 
 // Show a byte, used by the number
 
-void show_byte(uint8_t val, uint8_t offset) {
+void show_byte(uint8_t val, uint8_t offset, uint8 brightness, uint32_t color) {
     uint8_t i;
     for(i=0;i<8;i++) {
         if (bitRead(val,i+1)==1) {
-            StripLights_Pixel(i+offset, 0, 0x00001000);
+            StripLights_Pixel(i+offset, 0, corr_color(brightness, color));
+            //StripLights_Pixel(i+offset, 0, color);
         }
     }
+}
+
+void edge(uint8 offset, uint8 brightness, uint32 color) {
+    uint8_t i;
+    for(i=8;i<20; i=i+2){
+        StripLights_Pixel(i+offset, 0, corr_color(brightness, color));
+    }
+}
+
+
+uint32 corr_color(uint8 brightness, uint32 color) {
+    
+    uint32 corrected = 0;
+    
+    float b_corr = brightness/255.0;
+    
+    //corrected = (corrected) + (gamma_corr[(color >> 8) & 0xff] << 0);
+    //corrected = (corrected) + (gamma_corr[(color >> 16) & 0xff] << 8);
+    //corrected = (corrected) + (gamma_corr[(color >> 0) & 0xff] << 16);
+    
+    corrected = corrected + ((uint8)(b_corr*((color >> 0) & 0xff)) << 0);
+    corrected = corrected + ((uint8)(b_corr*((color >> 8) & 0xff)) << 8);
+    corrected = corrected + ((uint8)(b_corr*((color >> 16) & 0xff)) << 16);
+     
+    
+    return corrected;
 }
 
 
@@ -253,28 +320,42 @@ void SingleLEDRand()
     CyDelay(200);
 }
 
-void SingleLEDRand2(uint32 ledPosition)
+void NumberLED(uint8 ledPosition, uint8 brightness,  uint32 color)
 {
-    //uint32 ledPosition = 4;
-
-		// Wait for last update to finish
+    // Wait for last update to finish
     while( StripLights_Ready() == 0);                 
 	
 	// Clear all LEDs to background color
 	StripLights_MemClear(StripLights_BLACK);   
 	
-	// Set the color of a single LED
-    number(ledPosition,1);
-    //StripLights_Pixel(ledPosition, 0, StripLights_RED ); 
+	
+    number(ledPosition,1, brightness, color);
 
 	// Trigger update of all LEDs at once
     StripLights_Trigger(1);   
-    
-    CyDelay(500);
-    
+}
+
+void EdgeLED(uint8 brightness,  uint32 color)
+{
+    // Wait for last update to finish
+    while( StripLights_Ready() == 0);                 
+	
+	// Clear all LEDs to background color
+	//StripLights_MemClear(StripLights_BLACK);   
+	
+	
+    edge(1, brightness, color);
+
+	// Trigger update of all LEDs at once
+    StripLights_Trigger(1);   
 }
     
-
+/************************************************
+ *                    SingleLED()
+ *
+ *  Rotate a single LED around the ring.
+ *
+ ************************************************/
 
 void SingleLED(uint32 delay)
 {

@@ -1,0 +1,21 @@
+1 = de tile, 2 = getal weer te geven, 3 = getal brightness , 4,5,6 getal rgb, 7 = edgelit brightness, 8-9-10 edgelit kleur?
+
+
+
+
+1 tile nummer
+
+2 nummer weergeven
+
+3 brightness number
+
+
+4,5,6 nummer rgb
+
+7 brightness edge
+
+8,9,10 kleur edge
+
+11 brightness water
+
+12,13,14 kleur water
