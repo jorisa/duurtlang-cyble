@@ -1,0 +1,15 @@
+Last Modified Date & Time: 03/07/2017 22:31:08
+
+StripLightLib: StripLights_v2_2.cysch
+	StringSel [v1.70] to [v1.80]
+	Clock [v2.0] to [v2.20]
+
+StripLightLib: StripLights_v2_2.cysch
+	Clock [v2.0] to [v2.20]
+	StringSel [v1.70] to [v1.80]
+
+StripLightLib: StripLights_v2_2.cysch
+	HFCLK [v2.10] to [v2.20]
+	StringSel [v1.70] to [v1.80]
+
+

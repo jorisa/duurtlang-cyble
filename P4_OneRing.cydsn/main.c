@@ -44,13 +44,19 @@ void OppositeRings(uint32 delay);
 void OneColor(uint32 delay);
 void SingleLedMultiColor(uint32 delay);
 void SingleLEDRand();
-void NumberLED(uint8 ledPosition, uint8 brightness, uint32 color);
-void EdgeLED(uint8 brightness, uint32 color);
+void NumberLED(uint8 ledPosition, uint16 offset, uint8 brightness, uint32 color);
+void EdgeLED(uint8 brightness, uint16 offset, uint32 color);
+void WaterLED(uint8 brightness, uint16 offset,  uint32 color);
 
-void number(uint8_t number, uint8_t offset, uint8 brightness, uint32_t color);
-void show_byte(uint8_t val, uint8_t offset, uint8 brightness, uint32_t color);
+void number(uint8_t number, uint16_t offset, uint8 brightness, uint32_t color);
+void show_byte(uint8_t val, uint16_t offset, uint8 brightness, uint32_t color);
 
-void edge(uint8_t offset, uint8 brightness, uint32 color);
+void ClearLEDs(uint16 offset, uint8 LEDs);
+
+void edge(uint16_t offset, uint8 brightness, uint32 color);
+void water(uint16_t offset, uint8 brightness, uint32 color);
+
+void allred();
 
 uint32 corr_color(uint8 brightness, uint32 color);
 
@@ -101,7 +107,8 @@ int main()
 	for(;;)
 	{
         CyBle_ProcessEvents();
-    
+        allred();
+        CyDelay(100);
         /*
         uint8_t i;
         for(i=0;i<=12;i++) {
@@ -162,27 +169,39 @@ void StackEventHandler(uint32 event, void *eventParam)
             
             if(wrReqParam->handleValPair.attrHandle == CYBLE_CATAN_TILE_CHAR_HANDLE) //If client writes to the number_write characteristic
                 {
-                    uint8 number_write = wrReqParam->handleValPair.value.val[0]; //Pull out the number_write value
+                    uint16 tile = wrReqParam->handleValPair.value.val[0];
                     
-                    uint8 bright_num = wrReqParam->handleValPair.value.val[1];
+                    uint8 number_write = wrReqParam->handleValPair.value.val[1]; //Pull out the number_write value
+                    
+                    uint8 bright_num = wrReqParam->handleValPair.value.val[2];
                    
                     uint32 color_num = 0;
-                    color_num = wrReqParam->handleValPair.value.val[2];
-                    color_num = (color_num << 8) + wrReqParam->handleValPair.value.val[3];
+                    color_num = wrReqParam->handleValPair.value.val[3];
                     color_num = (color_num << 8) + wrReqParam->handleValPair.value.val[4];
+                    color_num = (color_num << 8) + wrReqParam->handleValPair.value.val[5];
 
-                    uint8 bright_edge = wrReqParam->handleValPair.value.val[5];
+                    uint8 bright_edge = wrReqParam->handleValPair.value.val[6];
                    
                     uint32 color_edge = 0;
-                    color_edge = wrReqParam->handleValPair.value.val[6];
-                    color_edge = (color_edge << 8) + wrReqParam->handleValPair.value.val[7];
+                    color_edge = wrReqParam->handleValPair.value.val[7];
                     color_edge = (color_edge << 8) + wrReqParam->handleValPair.value.val[8];
+                    color_edge = (color_edge << 8) + wrReqParam->handleValPair.value.val[9];
                     
+                    uint8 bright_water = wrReqParam->handleValPair.value.val[10];
+                    
+                    uint32 color_water = 0;
+                    color_water = wrReqParam->handleValPair.value.val[11];
+                    color_water = (color_water << 8) + wrReqParam->handleValPair.value.val[12];
+                    color_water = (color_water << 8) + wrReqParam->handleValPair.value.val[13];                
 
                     CyBle_GattsWriteAttributeValue(&wrReqParam->handleValPair, 0, &cyBle_connHandle, CYBLE_GATT_DB_PEER_INITIATED); 
                     
-                    NumberLED(number_write, bright_num, color_num);
-                    EdgeLED(bright_edge, color_edge);
+                    // Clear specific tile
+                    ClearLEDs(tile*20,21);
+                    
+                    NumberLED(number_write, tile*20, bright_num, color_num);
+                    EdgeLED(bright_edge, tile*20,  color_edge);
+                    WaterLED(bright_water, tile*20,  color_water);
                 }   
  
             if (event == CYBLE_EVT_GATTS_WRITE_REQ) //If write was a write with response request.
@@ -200,12 +219,29 @@ void StackEventHandler(uint32 event, void *eventParam)
     }
 }
 
+void allred()
+{
+    uint16_t i;
+    for(i=0;i<400; i++){
+        StripLights_Pixel(i, 0, 0x00001000 );
+    }
+    StripLights_Trigger(1);
+}
+
+// Clear a tile
+void ClearLEDs(uint16 offset, uint8 LEDs) {
+    uint16_t i;
+    for(i=0;i<LEDs; i++){
+        StripLights_Pixel(i + offset, 0, StripLights_BLACK );
+    }
+}
+
 // Display a number
 
-void number(uint8_t number, uint8_t offset, uint8 brightness, uint32_t color) {
+void number(uint8_t number, uint16_t offset, uint8 brightness, uint32_t color) {
     if (number >= 10) {
-        StripLights_Pixel(6+offset, 0, color);
-        StripLights_Pixel(7+offset, 0, color);
+        StripLights_Pixel(7+offset, 0, corr_color(brightness, color));
+        StripLights_Pixel(8+offset, 0, corr_color(brightness, color));
         number = number - 10;
     }
     switch (number) {
@@ -244,23 +280,29 @@ void number(uint8_t number, uint8_t offset, uint8 brightness, uint32_t color) {
 
 // Show a byte, used by the number
 
-void show_byte(uint8_t val, uint8_t offset, uint8 brightness, uint32_t color) {
-    uint8_t i;
+void show_byte(uint8_t val, uint16_t offset, uint8 brightness, uint32_t color) {
+    uint16_t i;
     for(i=0;i<8;i++) {
-        if (bitRead(val,i+1)==1) {
+        if (bitRead(val,i)==1) {
             StripLights_Pixel(i+offset, 0, corr_color(brightness, color));
             //StripLights_Pixel(i+offset, 0, color);
         }
     }
 }
 
-void edge(uint8 offset, uint8 brightness, uint32 color) {
-    uint8_t i;
-    for(i=8;i<20; i=i+2){
+void edge(uint16 offset, uint8 brightness, uint32 color) {
+    uint16_t i;
+    for(i=9;i<20; i=i+2){
         StripLights_Pixel(i+offset, 0, corr_color(brightness, color));
     }
 }
 
+void water(uint16 offset, uint8 brightness, uint32 color) {
+    uint16 i;
+    for(i=10;i<21; i=i+2){
+        StripLights_Pixel(i+offset, 0, corr_color(brightness, color));
+    }
+}
 
 uint32 corr_color(uint8 brightness, uint32 color) {
     
@@ -320,22 +362,7 @@ void SingleLEDRand()
     CyDelay(200);
 }
 
-void NumberLED(uint8 ledPosition, uint8 brightness,  uint32 color)
-{
-    // Wait for last update to finish
-    while( StripLights_Ready() == 0);                 
-	
-	// Clear all LEDs to background color
-	StripLights_MemClear(StripLights_BLACK);   
-	
-	
-    number(ledPosition,1, brightness, color);
-
-	// Trigger update of all LEDs at once
-    StripLights_Trigger(1);   
-}
-
-void EdgeLED(uint8 brightness,  uint32 color)
+void NumberLED(uint8 ledPosition, uint16 offset, uint8 brightness,  uint32 color)
 {
     // Wait for last update to finish
     while( StripLights_Ready() == 0);                 
@@ -344,7 +371,37 @@ void EdgeLED(uint8 brightness,  uint32 color)
 	//StripLights_MemClear(StripLights_BLACK);   
 	
 	
-    edge(1, brightness, color);
+    number(ledPosition,offset, brightness, color);
+
+	// Trigger update of all LEDs at once
+    //StripLights_Trigger(1);   
+}
+
+void EdgeLED(uint8 brightness, uint16 offset,  uint32 color)
+{
+    // Wait for last update to finish
+    while( StripLights_Ready() == 0);                 
+	
+	// Clear all LEDs to background color
+	//StripLights_MemClear(StripLights_BLACK);   
+	
+	
+    edge(offset, brightness, color);
+
+	// Trigger update of all LEDs at once
+    //StripLights_Trigger(1);   
+}
+
+void WaterLED(uint8 brightness, uint16 offset,  uint32 color)
+{
+    // Wait for last update to finish
+    while( StripLights_Ready() == 0);                 
+	
+	// Clear all LEDs to background color
+	//StripLights_MemClear(StripLights_BLACK);   
+	
+	
+    water(offset, brightness, color);
 
 	// Trigger update of all LEDs at once
     StripLights_Trigger(1);   
