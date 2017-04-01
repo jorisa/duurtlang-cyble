@@ -13,6 +13,11 @@
       <Data key="62fbdf19-e78e-4bff-9da8-3b5c1d7b50f6/e530a9ee-27b4-444b-91b5-72801be8ada4" value="StripLights_HFCLK" />
       <Data key="92fc0fe6-80bd-4346-8b1d-25ec4521f2ea/5ae6fa4d-f41a-4a35-8821-7ce70389cb0c" value="BLE_LFCLK" />
     </Group>
+    <Group key="Interrupt">
+      <Data key="62fbdf19-e78e-4bff-9da8-3b5c1d7b50f6/2b704f3c-201b-49ce-b9ea-d28896abd3d8" value="StripLights_fisr" />
+      <Data key="62fbdf19-e78e-4bff-9da8-3b5c1d7b50f6/b730f705-089b-4688-acbb-7f4384b0672b" value="StripLights_cisr" />
+      <Data key="92fc0fe6-80bd-4346-8b1d-25ec4521f2ea/0bca1fc6-354d-4d61-89fa-de74f0d280d1" value="BLE_bless_isr" />
+    </Group>
     <Group key="Pin">
       <Data key="4c15b41e-e284-4978-99e7-5aaee19bd0ce" value="SW1" />
       <Data key="52f31aa9-2f0a-497d-9a1f-1424095e13e6" value="Din" />
@@ -409,6 +414,10 @@
       </Group>
     </Group>
   </Group>
+  <Group key="Interrupt">
+    <Data key="62fbdf19-e78e-4bff-9da8-3b5c1d7b50f6/2b704f3c-201b-49ce-b9ea-d28896abd3d8" value="2" />
+    <Data key="62fbdf19-e78e-4bff-9da8-3b5c1d7b50f6/b730f705-089b-4688-acbb-7f4384b0672b" value="2" />
+  </Group>
   <Group key="M0S8Clock">
     <Group key="LocalClks">
       <Group key="62fbdf19-e78e-4bff-9da8-3b5c1d7b50f6/e530a9ee-27b4-444b-91b5-72801be8ada4">
@@ -573,7 +582,7 @@
         <Data key="sourceClk_plus_acuracy_name" value="60" />
         <Data key="src_clk_id" value="D231CDB6-1E83-48bf-9FBA-0584D07512BE" />
         <Data key="src_clk_name" value="ILO" />
-        <Data key="start_on_reset" value="False" />
+        <Data key="start_on_reset" value="True" />
       </Group>
       <Group key="13A80296-70D5-4f89-B0D3-510602484A50">
         <Data key="check_tolerance" value="False" />
@@ -647,7 +656,7 @@
         <Data key="sourceClk_plus_acuracy_name" value="0.015" />
         <Data key="src_clk_id" value="" />
         <Data key="src_clk_name" value="" />
-        <Data key="start_on_reset" value="True" />
+        <Data key="start_on_reset" value="False" />
       </Group>
       <Group key="413DE2EF-D9F2-4233-A808-DFAF137FD877">
         <Data key="check_tolerance" value="False" />

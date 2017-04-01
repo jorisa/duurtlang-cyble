@@ -56,7 +56,7 @@ void ClearLEDs(uint16 offset, uint8 LEDs);
 void edge(uint16_t offset, uint8 brightness, uint32 color);
 void water(uint16_t offset, uint8 brightness, uint32 color);
 
-void allred();
+void allColor(uint16_t color);
 
 uint32 corr_color(uint8 brightness, uint32 color);
 
@@ -103,12 +103,14 @@ int main()
     
 	// Loop through the different patterns each time SW1 is pressed.
     
+    uint16_t colorVal = 0;
     
 	for(;;)
 	{
         CyBle_ProcessEvents();
-        allred();
-        CyDelay(100);
+        //colorVal++;
+        //allColor(colorVal);
+        //CyDelay(1);
         /*
         uint8_t i;
         for(i=0;i<=12;i++) {
@@ -219,11 +221,13 @@ void StackEventHandler(uint32 event, void *eventParam)
     }
 }
 
-void allred()
+void allColor(uint16_t color)
 {
+    // Wait for last update to finish
+    while( StripLights_Ready() == 0);  
     uint16_t i;
     for(i=0;i<400; i++){
-        StripLights_Pixel(i, 0, 0x00001000 );
+        StripLights_Pixel(i, 0, color );
     }
     StripLights_Trigger(1);
 }
