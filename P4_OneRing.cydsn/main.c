@@ -53,6 +53,8 @@ void show_byte(uint8_t val, uint16_t offset, uint8 brightness, uint32_t color);
 
 void ClearLEDs(uint16 offset, uint8 LEDs);
 
+uint16 offset_calc(uint8 tile);
+
 void edge(uint16_t offset, uint8 brightness, uint32 color);
 void water(uint16_t offset, uint8 brightness, uint32 color);
 
@@ -171,6 +173,7 @@ void StackEventHandler(uint32 event, void *eventParam)
             
             if(wrReqParam->handleValPair.attrHandle == CYBLE_CATAN_TILE_CHAR_HANDLE) //If client writes to the number_write characteristic
                 {
+                                       
                     uint16 tile = wrReqParam->handleValPair.value.val[0];
                     
                     uint8 number_write = wrReqParam->handleValPair.value.val[1]; //Pull out the number_write value
@@ -178,32 +181,38 @@ void StackEventHandler(uint32 event, void *eventParam)
                     uint8 bright_num = wrReqParam->handleValPair.value.val[2];
                    
                     uint32 color_num = 0;
-                    color_num = wrReqParam->handleValPair.value.val[3];
+                    color_num = wrReqParam->handleValPair.value.val[5];
+                    color_num = (color_num << 8) + wrReqParam->handleValPair.value.val[3];
                     color_num = (color_num << 8) + wrReqParam->handleValPair.value.val[4];
-                    color_num = (color_num << 8) + wrReqParam->handleValPair.value.val[5];
 
                     uint8 bright_edge = wrReqParam->handleValPair.value.val[6];
                    
                     uint32 color_edge = 0;
-                    color_edge = wrReqParam->handleValPair.value.val[7];
+                    color_edge = wrReqParam->handleValPair.value.val[9];
+                    color_edge = (color_edge << 8) + wrReqParam->handleValPair.value.val[7];
                     color_edge = (color_edge << 8) + wrReqParam->handleValPair.value.val[8];
-                    color_edge = (color_edge << 8) + wrReqParam->handleValPair.value.val[9];
                     
                     uint8 bright_water = wrReqParam->handleValPair.value.val[10];
                     
                     uint32 color_water = 0;
-                    color_water = wrReqParam->handleValPair.value.val[11];
-                    color_water = (color_water << 8) + wrReqParam->handleValPair.value.val[12];
-                    color_water = (color_water << 8) + wrReqParam->handleValPair.value.val[13];                
+                    color_water = wrReqParam->handleValPair.value.val[13];
+                    color_water = (color_water << 8) + wrReqParam->handleValPair.value.val[11];
+                    color_water = (color_water << 8) + wrReqParam->handleValPair.value.val[12];                
 
                     CyBle_GattsWriteAttributeValue(&wrReqParam->handleValPair, 0, &cyBle_connHandle, CYBLE_GATT_DB_PEER_INITIATED); 
                     
                     // Clear specific tile
-                    ClearLEDs(tile*20,21);
+                    ClearLEDs(offset_calc(tile),21);
                     
-                    NumberLED(number_write, tile*20, bright_num, color_num);
-                    EdgeLED(bright_edge, tile*20,  color_edge);
-                    WaterLED(bright_water, tile*20,  color_water);
+                    NumberLED(number_write, offset_calc(tile), bright_num, color_num);
+                    EdgeLED(bright_edge, offset_calc(tile),  color_edge);
+                    WaterLED(bright_water, offset_calc(tile),  color_water);
+                    
+                    // Trigger update of all LEDs at once
+                    //if (tile == 18 || tile == 10)
+                    //{
+                        StripLights_Trigger(1);  
+                    //}
                 }   
  
             if (event == CYBLE_EVT_GATTS_WRITE_REQ) //If write was a write with response request.
@@ -292,6 +301,33 @@ void show_byte(uint8_t val, uint16_t offset, uint8 brightness, uint32_t color) {
             //StripLights_Pixel(i+offset, 0, color);
         }
     }
+}
+
+// Correct for led offsets
+uint16_t offset_calc(uint8_t tile) {
+    uint16_t offset = tile*20;
+    switch (tile) {
+        case 6:
+            offset = offset + 1;
+            break;
+        case 7:
+            offset = offset + 2;
+            break;
+        case 8:
+            offset = offset + 3;
+            break;
+        case 9:
+            offset = offset + 4;
+            break;
+        case 10:
+            offset = offset + 5;
+            break;
+    }
+    if (tile > 10)
+    {
+        offset = offset + 5;
+    }
+    return offset;
 }
 
 void edge(uint16 offset, uint8 brightness, uint32 color) {
@@ -407,8 +443,7 @@ void WaterLED(uint8 brightness, uint16 offset,  uint32 color)
 	
     water(offset, brightness, color);
 
-	// Trigger update of all LEDs at once
-    StripLights_Trigger(1);   
+
 }
     
 /************************************************
