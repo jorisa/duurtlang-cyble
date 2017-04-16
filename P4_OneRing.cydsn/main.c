@@ -199,6 +199,10 @@ void StackEventHandler(uint32 event, void *eventParam)
                     color_water = (color_water << 8) + wrReqParam->handleValPair.value.val[11];
                     color_water = (color_water << 8) + wrReqParam->handleValPair.value.val[12];                
 
+                    uint8 settings_byte = 0;
+                    settings_byte = wrReqParam->handleValPair.value.val[14];
+                    uint8 update_leds_bool = settings_byte & 0x00000001;
+                    
                     CyBle_GattsWriteAttributeValue(&wrReqParam->handleValPair, 0, &cyBle_connHandle, CYBLE_GATT_DB_PEER_INITIATED); 
                     
                     // Clear specific tile
@@ -209,10 +213,10 @@ void StackEventHandler(uint32 event, void *eventParam)
                     WaterLED(bright_water, offset_calc(tile),  color_water);
                     
                     // Trigger update of all LEDs at once
-                    //if (tile == 18 || tile == 10)
-                    //{
+                    if (update_leds_bool == 1)
+                    {
                         StripLights_Trigger(1);  
-                    //}
+                    }
                 }   
  
             if (event == CYBLE_EVT_GATTS_WRITE_REQ) //If write was a write with response request.
