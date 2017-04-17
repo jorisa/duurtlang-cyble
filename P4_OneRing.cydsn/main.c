@@ -38,7 +38,6 @@ void StackEventHandler(uint32 event, void* eventParam);
 // Function prototypes for pattern functions.
 void SingleLED(uint32 delay);
 void RgbChase(uint32 delay);
-void Clock(uint32 delay);
 void Rainbow(uint32 delay);
 void OppositeRings(uint32 delay);
 void OneColor(uint32 delay);
@@ -46,21 +45,26 @@ void SingleLedMultiColor(uint32 delay);
 void SingleLEDRand();
 void NumberLED(uint8 ledPosition, uint16 offset, uint8 brightness, uint32 color);
 void EdgeLED(uint8 brightness, uint16 offset, uint32 color);
-void WaterLED(uint8 brightness, uint16 offset,  uint32 color);
+void WaterLED(uint8 brightness, uint16 offset,  uint32 color, uint8 tile);
 
 void number(uint8_t number, uint16_t offset, uint8 brightness, uint32_t color);
 void show_byte(uint8_t val, uint16_t offset, uint8 brightness, uint32_t color);
 
 void ClearLEDs(uint16 offset, uint8 LEDs);
+void ClearTile(uint8 tile);
 
 uint16 offset_calc(uint8 tile);
 
+uint8 ExtraLED(uint8 tile);
+
 void edge(uint16_t offset, uint8 brightness, uint32 color);
-void water(uint16_t offset, uint8 brightness, uint32 color);
+void water(uint16_t offset, uint8 brightness, uint32 color, uint8 tile);
 
 void allColor(uint16_t color);
 
 uint32 corr_color(uint8 brightness, uint32 color);
+
+void Clock();
 
 extern const uint32 StripLights_CLUT[ ];
 
@@ -103,27 +107,16 @@ int main()
     /* Start the BLE component and register StackEventHandler function */
     CyBle_Start(StackEventHandler);    
     
-	// Loop through the different patterns each time SW1 is pressed.
+    // Start the Real-time clock
+    RTC_Start();  
     
-    uint16_t colorVal = 0;
-    
+	// Loop through the different patterns each time SW1 is pressed.   
 	for(;;)
 	{
         CyBle_ProcessEvents();
-        //colorVal++;
-        //allColor(colorVal);
-        //CyDelay(1);
-        /*
-        uint8_t i;
-        for(i=0;i<=12;i++) {
-        StripLights_MemClear(StripLights_BLACK);
-        number(i,1);
-        StripLights_Trigger(1);
-        CyDelay(1000);
-        */
+
         
-        //SingleLEDRand();
-        //SingleLED2(50);
+        //Clock();
         
         /*
 		SingleLedMultiColor(100);
@@ -201,22 +194,32 @@ void StackEventHandler(uint32 event, void *eventParam)
 
                     uint8 settings_byte = 0;
                     settings_byte = wrReqParam->handleValPair.value.val[14];
-                    uint8 update_leds_bool = settings_byte & 0x00000001;
-                    
+                    uint8 update_leds_bool = settings_byte & 0x1;
+                    uint8 clear_leds_bool = settings_byte & 0x2;
                     CyBle_GattsWriteAttributeValue(&wrReqParam->handleValPair, 0, &cyBle_connHandle, CYBLE_GATT_DB_PEER_INITIATED); 
                     
                     // Clear specific tile
-                    ClearLEDs(offset_calc(tile),21);
+                    ClearTile(tile);
                     
                     NumberLED(number_write, offset_calc(tile), bright_num, color_num);
                     EdgeLED(bright_edge, offset_calc(tile),  color_edge);
-                    WaterLED(bright_water, offset_calc(tile),  color_water);
+                    WaterLED(bright_water, offset_calc(tile),  color_water, tile);
+                    
+                    
+                    //NumberLED(ExtraLED(tile), offset_calc(18), bright_num, color_num);
+                    
+                    if (clear_leds_bool > 0)
+                    {
+                        ClearTile(tile);
+                    }
                     
                     // Trigger update of all LEDs at once
-                    if (update_leds_bool == 1)
+                    if (update_leds_bool > 0)
                     {
                         StripLights_Trigger(1);  
                     }
+                    
+                    
                 }   
  
             if (event == CYBLE_EVT_GATTS_WRITE_REQ) //If write was a write with response request.
@@ -252,6 +255,16 @@ void ClearLEDs(uint16 offset, uint8 LEDs) {
         StripLights_Pixel(i + offset, 0, StripLights_BLACK );
     }
 }
+
+void ClearTile(uint8 tile) {
+    uint16_t offset;
+    uint16_t i;
+    offset = offset_calc(tile);
+    for(i=offset; i<offset+20+ExtraLED(tile); i++) {
+        StripLights_Pixel(i, 0, StripLights_BLACK);
+    }
+}
+
 
 // Display a number
 
@@ -334,6 +347,20 @@ uint16_t offset_calc(uint8_t tile) {
     return offset;
 }
 
+uint8_t ExtraLED(uint8_t tile) {
+    switch (tile) {
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+            return 1;
+            break;
+    }
+    return 0;
+}
+
+
 void edge(uint16 offset, uint8 brightness, uint32 color) {
     uint16_t i;
     for(i=9;i<20; i=i+2){
@@ -341,9 +368,9 @@ void edge(uint16 offset, uint8 brightness, uint32 color) {
     }
 }
 
-void water(uint16 offset, uint8 brightness, uint32 color) {
+void water(uint16 offset, uint8 brightness, uint32 color, uint8 tile) {
     uint16 i;
-    for(i=10;i<21; i=i+2){
+    for(i=10;i<(20 + ExtraLED(tile)); i=i+2){
         StripLights_Pixel(i+offset, 0, corr_color(brightness, color));
     }
 }
@@ -436,7 +463,7 @@ void EdgeLED(uint8 brightness, uint16 offset,  uint32 color)
     //StripLights_Trigger(1);   
 }
 
-void WaterLED(uint8 brightness, uint16 offset,  uint32 color)
+void WaterLED(uint8 brightness, uint16 offset,  uint32 color, uint8 tile)
 {
     // Wait for last update to finish
     while( StripLights_Ready() == 0);                 
@@ -445,11 +472,53 @@ void WaterLED(uint8 brightness, uint16 offset,  uint32 color)
 	//StripLights_MemClear(StripLights_BLACK);   
 	
 	
-    water(offset, brightness, color);
+    water(offset, brightness, color, tile);
 
 
 }
+
+/************************************************
+ *                    Clock()
+ *
+ *  Starts a clock function.
+ *
+ ************************************************/
+
+void Clock()
+{
+    // Get the current time
+    // Show the seconds in the middle tile
+    uint8_t second;
+    second = RTC_GetSecond(RTC_GetTime());
+    uint8_t minute;
+    minute = RTC_GetMinutes(RTC_GetTime());
+    //ClearLEDs(offset_calc(17),21);
+    //ClearLEDs(offset_calc(18),21);
     
+    StripLights_MemClear(StripLights_BLACK);
+    NumberLED(second/10,offset_calc(17),40,21845);
+    NumberLED(second%10,offset_calc(18),40,21845);
+
+    NumberLED(minute/10,offset_calc(16),40,65280);
+    NumberLED(minute%10,offset_calc(15),40,65280);
+    
+    uint8_t i;
+    
+    for(i=1; i<13; i++){
+        edge(offset_calc(-(i+5)%12+11),40,16711680);
+        number(i,offset_calc(-(i+5)%12+11),40,255);
+    }
+    
+    StripLights_Trigger(1); 
+    
+    //RTC_Update();
+    CyDelay(10);
+    
+    
+}
+
+
+
 /************************************************
  *                    SingleLED()
  *
