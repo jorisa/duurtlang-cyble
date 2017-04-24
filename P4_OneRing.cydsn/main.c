@@ -45,8 +45,8 @@ extern uint8 deviceConnected;
 /* 'restartAdvertisement' flag is used to restart advertisement */
 extern uint8 restartAdvertisement;
 
-
-
+// Global brightness is used by the app do decrease the brightness
+uint8_t globalBrightness;
 
 
 
@@ -70,6 +70,9 @@ int main()
     // Start the Real-time clock
     RTC_Start();  
     
+    // Set the global brightness
+    globalBrightness = 255;
+    
     // Run the LED startup sequence
     while( StripLights_Ready() == 0);   
     StripLights_Trigger(1);  
@@ -92,6 +95,15 @@ int main()
 			UpdateConnectionParam();
 		}
         
+        if(restartAdvertisement)
+		{
+			/* Reset 'restartAdvertisement' flag*/
+			restartAdvertisement = 0;
+
+			/* Start Advertisement and enter Discoverable mode*/
+			CyBle_GappStartAdvertisement(CYBLE_ADVERTISING_FAST);	
+		}
+        
     // Read sensors
 
         
@@ -105,15 +117,17 @@ int main()
 
         
         
-        
+        //Rainbow(30);
         
         // Update output
         if (updateLeds > 0) {
             updateLeds = 0;
             while( StripLights_Ready() == 0);   
             
-            uint16_t i;
+            //uint16_t i;
             //for (i=0; i<10000; i++) {}
+            
+            // Als je de volgende regel toevoegt, gaat de eerste tile raar doen...
             //CyDelay(100);
             StripLights_Trigger(1);
         }
@@ -280,7 +294,9 @@ uint32_t corr_color(uint8 brightness, uint32_t color) {
     
     uint32_t corrected = 0;
     
-    float b_corr = brightness/255.0;
+    float b_corr = (globalBrightness/255.0)*(brightness/255.0);
+    
+    
     
     //corrected = (corrected) + (gamma_corr[(color >> 8) & 0xff] << 0);
     //corrected = (corrected) + (gamma_corr[(color >> 16) & 0xff] << 8);
