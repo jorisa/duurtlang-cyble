@@ -104,7 +104,7 @@ int main()
     StripLights_Start();  
 	
 	// Set dim level 0 = full power, 4 = lowest power
-    StripLights_Dim(0); 
+    StripLights_Dim(1); 
 	
 	// Clear all memory to black
 	StripLights_MemClear(StripLights_BLACK);
@@ -172,6 +172,13 @@ int main()
 
         //Rainbow(30);
 
+        uint8 resultCyb;
+        
+        //resultCyb = CyBle_GetState();
+        //if (resultCyb == CYBLE_STATE_DISCONNECTED) {
+        //    restartAdvertisement = 1; 
+        //}
+        
         
         // Update output
         if (updateLeds > 0) {
