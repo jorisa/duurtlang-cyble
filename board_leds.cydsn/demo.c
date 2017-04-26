@@ -14,7 +14,6 @@
 
 extern const uint32_t StripLights_CLUT[ ];
 
-extern uint8 ble_changed;
 
 /*
 void fadeTile(){

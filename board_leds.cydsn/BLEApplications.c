@@ -27,6 +27,8 @@ static uint8 isConnectionUpdateRequested = 1;
 /* 'restartAdvertisement' flag provided the present state of power mode in firmware */
 uint8 restartAdvertisement = 0;
 
+
+
 /* Connection Parameter update values. This values are used by the BLE component
 * to update the connector parameter, including connection interval, to desired 
 * value */
@@ -148,6 +150,8 @@ void StackEventHandler(uint32 event, void *eventParam)
             
             if(wrReqParam->handleValPair.attrHandle == CYBLE_CATAN_TILE_CHAR_HANDLE) //If client writes to the number_write characteristic
                 {
+                 
+                    
                     // Tile number                   
                     uint16 tile = wrReqParam->handleValPair.value.val[0];
                     
