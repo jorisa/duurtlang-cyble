@@ -14,6 +14,7 @@
 
 extern const uint32_t StripLights_CLUT[ ];
 
+extern uint8 ble_changed;
 
 /*
 void fadeTile(){
@@ -364,7 +365,7 @@ void Rainbow(uint32_t delay)
         if(startColor >= StripLights_COLOR_WHEEL_SIZE) startColor = 0;
     
         CyDelay(delay);   // Loop delay
-
+        CyBle_ProcessEvents();
 	    if(SW1_Read() == 0) break;  // If SW1 pressed leave
     }	
 	// Wait for SW1 to be released then delay a bit for debouncing

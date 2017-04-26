@@ -49,16 +49,50 @@ extern uint8 restartAdvertisement;
 // Global brightness is used by the app do decrease the brightness
 uint8_t globalBrightness;
 
-
+extern uint8 ble_changed;
 
 int main()
 {
     int result;
-    uint8_t data;
+    uint8_t data0;
+    uint8_t data1;
+    uint8_t data2;
+    uint8_t data3;
+    uint8_t data4;
+    uint8_t data5;
     
     i2c_init();
-    result = i2c_read(0x6A, 0x0A, &data);   
-    result = i2c_write(0x6A, 0x0A, 0x07);
+    result = i2c_read(0x6A, 0x04, &data0);
+    result = i2c_read(0x6A, 0x07, &data1);
+    result = i2c_read(0x6A, 0x0A, &data2);
+    result = i2c_write(0x6A, 0x04, 0x10);  //1A
+    result = i2c_write(0x6A, 0x07, 0x8D);  //Geen watchdog, rest default
+    result = i2c_write(0x6A, 0x0A, 0x07);  //
+    result = i2c_read(0x6A, 0x04, &data3);
+    result = i2c_read(0x6A, 0x07, &data4);
+    result = i2c_read(0x6A, 0x0A, &data5);
+    
+
+
+    // Light sensor:
+    //result = i2c_write(0x29, 0x00, 0x03);
+    //result = i2c_read(0x29, 0x00, &data2);
+    
+    //result = i2c_read(0x29, 0x01, &data3); 
+    //result = i2c_write(0x29, 0x01, 0x03);
+    //result = i2c_read(0x29, 0x01, &data4);   
+    
+    
+    CyDelay(100);
+    uint8_t lower1;
+    uint8_t higher1;
+    uint8_t lower2;
+    uint8_t higher2;
+    result = i2c_read(0x29, 0x0c, &lower1);
+    result = i2c_read(0x29, 0x0d, &higher1);
+    //result = i2c_read(0x29, 0x0e, &lower2);
+    //result = i2c_read(0x29, 0x0f, &higher1);
+    
     
     // Initialize StripLights
     StripLights_Start();  
@@ -128,8 +162,11 @@ int main()
         //updateLeds = 1;
 
         
-        
+        //if (ble_changed == 0) {
         //Rainbow(30);
+        //}
+        //StripLights_MemClear(0x10);
+        //StripLights_Trigger(1);
         
         // Update output
         if (updateLeds > 0) {
@@ -143,7 +180,12 @@ int main()
             //CyDelay(100);
             StripLights_Trigger(1);
         }
-
+        StripLights_Pixel(0,0,0x0000004F);
+        StripLights_Trigger(1);
+        CyDelay(200);
+        StripLights_Pixel(0,0,0x00000000);
+        StripLights_Trigger(1);
+        CyDelay(200);
     }
 }
 
@@ -217,7 +259,7 @@ void NumberLED(uint8_t number, uint16_t offset, uint8 brightness, uint32_t color
     }
     switch (number) {
         case 0:
-            show_byte(63, offset, brightness, color);
+            //show_byte(63, offset, brightness, color);
         break;
         case 1:
             show_byte(6, offset, brightness, color);
